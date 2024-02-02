@@ -1,0 +1,48 @@
+export function defineProperty<
+  Obj extends object,
+  Key extends PropertyKey,
+  PDesc extends PropertyDescriptor,
+>(
+  obj: Obj,
+  key: Key,
+  val: PDesc,
+): asserts obj is Obj & DefineProperty<Key, PDesc> {
+  Object.defineProperty(obj, key, val);
+}
+
+type InferValue<Prop extends PropertyKey, Desc> = Desc extends {
+  get(): any;
+  value: any;
+}
+  ? never
+  : Desc extends { value: infer T }
+    ? Record<Prop, T>
+    : Desc extends { get(): infer T }
+      ? Record<Prop, T>
+      : never;
+
+type DefineProperty<
+  Prop extends PropertyKey,
+  Desc extends PropertyDescriptor,
+> = Desc extends { writable: any; set(val: any): any }
+  ? never
+  : Desc extends { writable: any; get(): any }
+    ? never
+    : Desc extends { writable: false }
+      ? Readonly<InferValue<Prop, Desc>>
+      : Desc extends { writable: true }
+        ? InferValue<Prop, Desc>
+        : Readonly<InferValue<Prop, Desc>>;
+
+const a = {
+  a: 1,
+  b: 2,
+  c: 3,
+};
+
+defineProperty(a, 'd', {
+  value: 4,
+  enumerable: true,
+  configurable: true,
+  writable: true,
+});
